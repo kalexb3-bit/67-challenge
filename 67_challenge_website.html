@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>67 Challenge</title>
+<style>
+body{font-family:Arial;background:#0f172a;color:white;text-align:center}
+.container{max-width:900px;margin:auto}
+video{border:3px solid white;border-radius:10px}
+button{padding:10px 20px;font-size:18px;margin:10px;border-radius:8px;border:none;background:#2563eb;color:white}
+#count{font-size:48px;margin:10px}
+#timer{font-size:32px}
+.leaderboard{margin-top:30px}
+li{margin:4px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔥 67 Challenge 🔥</h1>
+<p>Move your hands up and down as fast as possible for 60 seconds.</p>
+<img src="bosnov-67.gif" width="300">
+
+<br><br>
+<input id="username" placeholder="Enter your name">
+<br>
+<video id="video" width="400" autoplay></video>
+
+<div id="count">0</div>
+<div id="timer">60</div>
+
+<button onclick="startGame()">Start</button>
+
+<h2>🏆 Leaderboard</h2>
+<ol id="leaderboard"></ol>
+</div>
+
+<script>
+let video=document.getElementById('video')
+let count=0
+let time=60
+let lastY=null
+let direction=""
+
+navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+video.srcObject=stream
+})
+
+function startGame(){
+count=0
+ time=60
+ document.getElementById('count').innerText=count
+ document.getElementById('timer').innerText=time
+ 
+ let interval=setInterval(()=>{
+ time--
+ document.getElementById('timer').innerText=time
+ if(time<=0){
+ clearInterval(interval)
+ saveScore()
+ }
+ },1000)
+
+ detectMotion()
+}
+
+function detectMotion(){
+ let canvas=document.createElement('canvas')
+ let ctx=canvas.getContext('2d')
+
+ setInterval(()=>{
+ canvas.width=video.videoWidth
+ canvas.height=video.videoHeight
+ ctx.drawImage(video,0,0)
+
+ let frame=ctx.getImageData(0,0,canvas.width,canvas.height)
+ let sum=0
+
+ for(let i=0;i<frame.data.length;i+=4){
+ sum+=frame.data[i]
+ }
+
+ if(lastY!==null){
+ if(sum>lastY && direction==='down'){
+ count++
+ document.getElementById('count').innerText=count
+ direction='up'
+ }
+ if(sum<lastY){
+ direction='down'
+ }
+ }
+
+ lastY=sum
+
+ },150)
+}
+
+function saveScore(){
+ let name=document.getElementById('username').value||"Player"
+ let scores=JSON.parse(localStorage.getItem('scores')||"[]")
+ scores.push({name:name,score:count})
+ scores.sort((a,b)=>b.score-a.score)
+ scores=scores.slice(0,10)
+ localStorage.setItem('scores',JSON.stringify(scores))
+ renderLeaderboard()
+}
+
+function renderLeaderboard(){
+ let scores=JSON.parse(localStorage.getItem('scores')||"[]")
+ let list=document.getElementById('leaderboard')
+ list.innerHTML=""
+ scores.forEach(s=>{
+ let li=document.createElement('li')
+ li.innerText=s.name+" - "+s.score
+ list.appendChild(li)
+ })
+}
+
+renderLeaderboard()
+</script>
+
+</body>
+</html>
